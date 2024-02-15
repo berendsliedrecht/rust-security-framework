@@ -1,6 +1,6 @@
 //! Encryption key support
 
-use crate::cvt;
+use crate::{access_control::SecAccessControl, cvt};
 use core_foundation::{
     base::TCFType, string::{CFStringRef, CFString},
     dictionary::CFMutableDictionary,
@@ -18,8 +18,7 @@ use core_foundation::number::CFNumber;
 use core_foundation::error::{CFError, CFErrorRef};
 
 use security_framework_sys::{
-    item::{kSecAttrKeyTypeRSA, kSecValueRef},
-    keychain_item::SecItemDelete
+    access_control, item::{kSecAttrAccessControl, kSecAttrKeyTypeRSA, kSecValueRef}, keychain_item::SecItemDelete
 };
 #[cfg(any(feature = "OSX_10_12", target_os = "ios", target_os = "tvos", target_os = "watchos"))]
 use security_framework_sys::{item::{
@@ -268,6 +267,12 @@ pub struct GenerateKeyOptions {
     pub token: Option<Token>,
     /// Which keychain to store the key in, if any.
     pub location: Option<Location>,
+
+    /// FOO
+    pub access_control: Option<SecAccessControl>,
+
+    /// BAR
+    pub app_tag: Option<String>,
 }
 
 #[cfg(any(feature = "OSX_10_12", target_os = "ios", target_os = "tvos", target_os = "watchos"))]
@@ -297,6 +302,16 @@ impl GenerateKeyOptions {
         self.location = Some(location);
         self
     }
+    /// Set `access_control`
+    pub fn set_access_control(&mut self, access_control: SecAccessControl) -> &mut Self {
+        self.access_control = Some(access_control);
+        self
+    }
+    /// Set `app_tag`
+    pub fn set_app_tag(&mut self, app_tag: impl Into<String>) -> &mut Self {
+        self.app_tag= Some(app_tag.into());
+        self
+    }
 
     /// Collect options into a `CFDictioanry`
     pub fn to_dictionary(&self) -> CFDictionary {
@@ -307,10 +322,17 @@ impl GenerateKeyOptions {
         };
 
         let is_permanent = CFBoolean::from(self.location.is_some());
-        let private_attributes = CFMutableDictionary::from_CFType_pairs(&[(
-            unsafe { kSecAttrIsPermanent }.to_void(),
-            is_permanent.to_void(),
-        )]);
+        let mut private_attributes = CFMutableDictionary::from_CFType_pairs(&[
+            ( unsafe { kSecAttrIsPermanent }.to_void(),      is_permanent.to_void())]);
+
+
+        if let Some(ac) = &self.access_control{
+            private_attributes.add(&unsafe { kSecAttrAccessControl }.to_void(), &ac.to_void());
+        }
+
+        if let Some(at) = &self.app_tag {
+            private_attributes.add(&unsafe { kSecAttrApplicationLabel }.to_void(), &CFString::new(at).to_void());
+        }
 
         let public_attributes = CFMutableDictionary::from_CFType_pairs(&[(
             unsafe { kSecAttrIsPermanent }.to_void(),

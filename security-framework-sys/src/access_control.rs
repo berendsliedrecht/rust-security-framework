@@ -9,9 +9,9 @@ mod access_control_flags {
     use super::CFOptionFlags;
 
     pub const kSecAccessControlUserPresence: CFOptionFlags = 1 << 0;
-    #[cfg(feature = "OSX_10_13")]
+    #[cfg(any(feature = "OSX_10_13", target_os = "ios", target_os = "tvos", target_os = "watchos"))]
     pub const kSecAccessControlBiometryAny: CFOptionFlags = 1 << 1;
-    #[cfg(feature = "OSX_10_13")]
+    #[cfg(any(feature = "OSX_10_13", target_os = "ios", target_os = "tvos", target_os = "watchos"))]
     pub const kSecAccessControlBiometryCurrentSet: CFOptionFlags = 1 << 3;
     pub const kSecAccessControlDevicePasscode: CFOptionFlags = 1 << 4;
     #[cfg(feature = "OSX_10_15")]

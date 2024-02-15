@@ -1,9 +1,10 @@
 //! Access Control support.
 
-use std::ptr::{self, null};
+use std::ptr;
 
 use core_foundation::base::{TCFType, CFOptionFlags, kCFAllocatorDefault};
-use security_framework_sys::access_control::{SecAccessControlGetTypeID, SecAccessControlCreateWithFlags};
+use core_foundation_sys::base::TCFTypeRef;
+use security_framework_sys::access_control::{kSecAttrAccessibleWhenUnlockedThisDeviceOnly, SecAccessControlCreateWithFlags, SecAccessControlGetTypeID};
 use security_framework_sys::base::{SecAccessControlRef, errSecParam};
 use crate::base::{Error, Result};
 
@@ -26,7 +27,7 @@ impl SecAccessControl {
         unsafe {
             let access_control = SecAccessControlCreateWithFlags(
                 kCFAllocatorDefault,
-                null(),
+                kSecAttrAccessibleWhenUnlockedThisDeviceOnly.as_void_ptr(),
                 flags,
                 ptr::null_mut(),
             );
